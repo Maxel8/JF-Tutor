@@ -137,6 +137,35 @@ box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 transform: scale(0.98);
 }
 
+.btn_kapitel {
+width: 100%;
+background: #fff;
+border: none;
+color: var(--fire-red);
+padding: 12px 14px;
+border-radius: 10px;
+font-size: 1rem;
+font-weight: 600;
+cursor: pointer;
+margin-bottom: 16px;
+
+transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.btn_kapitel:hover {
+background: var(--fire-red);
+color: #fff;
+transform: translateY(-1px);
+box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+}
+
+.btn_kapitel:active {
+transform: scale(0.98);
+}
+
+
+
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -182,4 +211,29 @@ ul, ol {
     color: rgb(255, 255, 255);       /* Textfarbe */
     padding-left: 20px; /* Abstand vom Rand */
     margin: 10px 0;     /* Abstand oben und unten */ 
+}
+
+form {
+max-width: 700px;
+margin: 40px auto;
+background: var(--fire-red);
+padding: 28px 32px;
+border-radius: 14px;
+box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+label {
+display: flex;
+align-items: center;
+gap: 10px;
+margin: 6px 0;
+cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+accent-color: var(--fire-red); /* Feuerwehr-Rot */
+width: 18px;
+height: 18px;
+cursor: pointer;
 }
