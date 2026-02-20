@@ -1,0 +1,47 @@
+name: Deploy Pre-Release to Beta Pages
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy-beta:
+    if: github.event.release.prerelease == true
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Pre-Release-Tag
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      # 2. Optional: Build-Step, falls du einen Build brauchst
+      # - name: Build
+      #   run: |
+      #     npm ci
+      #     npm run build
+      #     # Build output liegt z. B. in ./build
+
+      # 3. Prepare publish directory
+      - name: Prepare publish directory
+        run: |
+          rm -rf /tmp/publish || true
+          mkdir -p /tmp/publish
+          # Kopiere alles außer .git
+          rsync -av --exclude='.git' . /tmp/publish/
+
+      # 4. Push auf Beta-Pages Repo
+      - name: Push to beta.JF-Tutor gh-pages
+        env:
+          PAGES_REPO: Maxel8/beta.JF-Tutor
+        run: |
+          cd /tmp/publish
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Deploy prerelease ${{ github.event.release.tag_name }}" || true
+          git remote add target https://x-access-token:${{ secrets.PAGES_REPO_PAT }}@github.com/${PAGES_REPO}.git
+          git push --force target HEAD:gh-pages
