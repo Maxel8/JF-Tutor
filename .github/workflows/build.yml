@@ -1,38 +1,52 @@
-name: Deploy Pre-Release to Beta Pages
+name: Deploy Pre-Release to Beta Pages (robust + debug)
 
 on:
-  release:
-    types: [published]
+  release:       # wir empfangen alle release-Payloads und filtern später
+  workflow_dispatch:
 
 jobs:
   deploy-beta:
-    if: github.event.release.prerelease == true
+    # nur ausführen wenn die Aktion 'published' ist UND das Release als prerelease markiert ist
+    if: ${{ github.event.action == 'published' && github.event.release.prerelease == true }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-      # 1. Checkout Pre-Release-Tag
+      - name: Debug: show event info (for troubleshooting)
+        run: |
+          echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
+          echo "github.event.action = ${{ github.event.action }}"
+          echo "github.event.release.prerelease = ${{ github.event.release.prerelease }}"
+          echo "github.event.release.tag_name = ${{ github.event.release.tag_name }}"
+          echo "Dump payload (useful to inspect what arrived):"
+          # safe fallback: cat is always available
+          if [ -f "$GITHUB_EVENT_PATH" ]; then
+            cat "$GITHUB_EVENT_PATH"
+          else
+            echo "No event payload found at $GITHUB_EVENT_PATH"
+          fi
+
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
+          persist-credentials: false
 
-      # 2. Optional: Build-Step, falls du einen Build brauchst
-      # - name: Build
-      #   run: |
-      #     npm ci
-      #     npm run build
-      #     # Build output liegt z. B. in ./build
+      - name: Optional build (enable if needed)
+        if: false
+        run: |
+          npm ci
+          npm run build
 
-      # 3. Prepare publish directory
       - name: Prepare publish directory
         run: |
           rm -rf /tmp/publish || true
           mkdir -p /tmp/publish
-          # Kopiere alles außer .git
-          rsync -av --exclude='.git' . /tmp/publish/
+          # copy only what you want: exclude node_modules, .github, .git, big folders
+          rsync -av --exclude='.git' --exclude='node_modules' --exclude='.github' . /tmp/publish/
 
-      # 4. Push auf Beta-Pages Repo
       - name: Push to beta.JF-Tutor gh-pages
         env:
           PAGES_REPO: Maxel8/beta.JF-Tutor
@@ -42,6 +56,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
           git add -A
-          git commit -m "Deploy prerelease ${{ github.event.release.tag_name }}" || true
+          # nur committen wenn Änderungen vorhanden
+          if git diff --cached --quiet; then
+            echo "No changes to deploy. Exiting."
+            exit 0
+          fi
+          git commit -m "Deploy prerelease ${{ github.event.release.tag_name }}"
           git remote add target https://x-access-token:${{ secrets.PAGES_REPO_PAT }}@github.com/${PAGES_REPO}.git
           git push --force target HEAD:gh-pages
